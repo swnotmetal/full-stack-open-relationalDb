@@ -1,5 +1,5 @@
 const {Model, DataTypes } = require('sequelize')
-
+var validator = require('validator');
 const { sequelize } = require('../util/db')
 
 class User extends Model {}
@@ -21,6 +21,13 @@ User.init({
     },
 }, {
     sequelize,
+    validate: {
+        isEmailValid() {
+            if (!validator.isEmail(this.username)) {
+                throw new Error('Username must be a valid email');
+            }
+        }
+    },
     underscored: true,
     timestamps: false,
     modelName: 'user'
