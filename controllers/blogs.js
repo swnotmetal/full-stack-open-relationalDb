@@ -1,25 +1,29 @@
 const router = require('express').Router()
 const {Blog, User} = require('../models')
-
+const jwt = require('jsonwebtoken')
 const {SECRET} = require('../util/config')
-/*
-const tokenExtractor = (req, res, next) => {
-    const authorization = req.get('authorization')
-    if(authorization && authorization.toLowerCase().startsWith('bearer ')) {
-      try{
-        req.decodedToken = jwt.verify(authorization.substring(7), SECRET)
-      } catch {
-        return res.status(401).json({
-          error: 'invalid token'
-        })
-      }
-    } else{
-      return res.status(401).json({
-        error: 'token missing'
-      })
+
+const tokenAuthen = async (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
+    console.log('Extracted Token:', token);
+    if (!token) {
+        return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
-    next() //move on the middleware
-  }*/
+
+    try {
+        const decoded = jwt.verify(token, SECRET);
+        const user = await User.findByPk(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        req.user = user;
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
 
 router.get('/', async(req, res) => {
     const blogs = await Blog.findAll()
@@ -27,27 +31,34 @@ router.get('/', async(req, res) => {
     res.json(blogs)
 })
 
-router.post('/', async(req, res) => {
-    if(!req.body.title || !req.body.url) { // Changed && to || to require both fields
-        return res.status(400).json({ error: "Title and URL are required"})
-    }
-    const user = await User.findOne()
-    const blog = await Blog.create({...req.body, userId: user.id})
-    console.log(blog.toJSON())
-    return res.json(blog)
-})
+router.post('/', tokenAuthen, async (req, res) => {
+    const user = req.user; // Logged-in user
+    const blog = await Blog.create({ ...req.body, userId: user.id });
+    res.json(blog);
+});
 
-router.delete('/:id', async(req, res) => {
-    const {id} = req.params
-    
-    const blog = await Blog.findByPk(id)
-    if(blog) {
-        await blog.destroy()
-        res.status(200).json({message: `Blog with ID ${id} deleted`})
-    } else {
-        res.status(404).json({message: `Blog with ID ${id} not found`})
+router.delete('/:id', tokenAuthen, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id; // Current logged-in user
+    console.log(`Logged-in user: ${req.user.username}, ID: ${userId}`);
+
+    const blog = await Blog.findByPk(id);
+    if (!blog) {
+        console.log(`Blog with ID ${id} not found`);
+        return res.status(404).json({ message: `Blog with ID ${id} not found` });
     }
-})
+
+    console.log(`Blog found: ${blog.title}, Author ID: ${blog.userId}`);
+
+    if (blog.userId !== userId) {
+        console.log(`Unauthorized delete attempt by user ID: ${userId}`);
+        return res.status(403).json({ message: 'Unauthorized to delete this blog' });
+    }
+
+    await blog.destroy();
+    console.log(`Blog with ID ${id} deleted by user ID: ${userId}`);
+    res.status(200).json({ message: `Blog with ID ${id} deleted` });
+});
 
 router.put('/:id', async(req, res) => {
     const { id } = req.params
