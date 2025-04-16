@@ -2,7 +2,7 @@ const router = require('express').Router()
 const {Blog, User} = require('../models')
 const jwt = require('jsonwebtoken')
 const {SECRET} = require('../util/config')
-
+const {Op} = require('sequelize')
 const tokenAuthen = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
     console.log('Extracted Token:', token);
@@ -26,11 +26,19 @@ const tokenAuthen = async (req, res, next) => {
 };
 
 router.get('/', async(req, res) => {
+    const where = {}
+
+    if(req.query.search) {
+        where.title = {
+            [Op.iLike]: `%${req.query.search}%`  // using ILIKE to handle cases in PostgreSQL instead of [Op.substring]
+        }
+    }
     const blogs = await Blog.findAll({
         include : {
             model: User,
             attributes: ['id', 'username', 'name']
-        }
+        },
+        where
     })
     console.log(JSON.stringify(blogs, null, 2))
     res.json(blogs)
