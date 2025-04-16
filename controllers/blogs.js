@@ -26,7 +26,12 @@ const tokenAuthen = async (req, res, next) => {
 };
 
 router.get('/', async(req, res) => {
-    const blogs = await Blog.findAll()
+    const blogs = await Blog.findAll({
+        include : {
+            model: User,
+            attributes: ['id', 'username', 'name']
+        }
+    })
     console.log(JSON.stringify(blogs, null, 2))
     res.json(blogs)
 })
@@ -64,7 +69,12 @@ router.put('/:id', async(req, res) => {
     const { id } = req.params
     const { likes } = req.body
 
-    const blog = await Blog.findByPk(id)
+    const blog = await Blog.findByPk(id, {
+        include: {
+            model:User,
+            attributes: ['id', 'username', 'name']
+        }
+    })
     
     if (!blog) {
         return res.status(404).json({ message: "No blog found" })
