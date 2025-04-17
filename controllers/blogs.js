@@ -3,6 +3,7 @@ const {Blog, User} = require('../models')
 const jwt = require('jsonwebtoken')
 const {SECRET} = require('../util/config')
 const { Op } = require('sequelize')
+const { sequelize } = require('../util/db')
 
 const tokenAuthen = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1]; // Bearer <token>
@@ -102,5 +103,6 @@ router.put('/:id', async(req, res) => {
 
     res.json(blog)
 })
+
 
 module.exports = router
