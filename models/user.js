@@ -29,8 +29,10 @@ User.init({
         }
     },
     underscored: true,
-    timestamps: false,
-    modelName: 'user'
+    timestamps: true,
+    modelName: 'user',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
 })
 
 module.exports = User
