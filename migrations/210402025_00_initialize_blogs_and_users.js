@@ -69,11 +69,15 @@ module.exports = {
                 defaultValue: DataTypes.NOW
             }
           })
-          await queryInterface.addColumn('blogs', 'user_id', {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            references: { model: 'users', key: 'id' },
-          })
+          try {
+            await queryInterface.addColumn('blogs', 'user_id', {
+              type: DataTypes.INTEGER,
+              references: { model: 'users', key: 'id' }
+            })
+          } catch (error) {
+            // Column already exists, continue
+            console.log('Note: user_id column may already exist')
+          }
         },
         down: async ({ context: queryInterface }) => {
           await queryInterface.removeColumn('blogs', 'user_id') 

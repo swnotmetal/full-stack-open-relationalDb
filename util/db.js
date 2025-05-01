@@ -3,7 +3,18 @@ const { DATABASE_URL } = require('./config')
 const { Umzug, SequelizeStorage } = require('umzug')
 
 const sequelize = new Sequelize(DATABASE_URL, {
-  dialect: 'postgres'
+  dialect: 'postgres',
+  logging: console.log,
+  retry: {
+    max: 5,
+    match: [/ConnectionError/, /SequelizeConnectionError/, /SequelizeConnectionRefusedError/]
+  },
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  }
 })
 
 
