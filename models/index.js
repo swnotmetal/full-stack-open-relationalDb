@@ -3,9 +3,9 @@ const User = require('./user')
 const Reading = require('./reading')
 
 
-/*
+
 User.hasMany(Blog)
-Blog.belongsTo(User) */
+Blog.belongsTo(User)
 
 User.belongsToMany(Blog, { 
   through: Reading, 

@@ -18,42 +18,43 @@ router.get('/', async (req, res) => {
     res.json(readings)
   })
 
-router.post('/', tokenAuthen, async (req, res) => {
-  try {
-  //find the blog
-  const blog = await Blog.findByPk(req.body.blogId)
-  if(!blog) {
-    return res.status(400).json({ error: 'Blog not found'})
-  }
+  router.get('/', async (req, res) => {
+    const readings = await Reading.findAll({
+      attributes: ['id', 'blog_id', 'user_id', 'read'],
+      include: [
+        { 
+          model: Blog,
+          attributes: ['title', 'author', 'url', 'year']
+        },
+        {
+          model: User,
+          attributes: ['username', 'name']
+        }
+      ]
+    })
 
-  //find the user
-  const user = await User.findByPk(req.body.userId)
-  if(!user) {
-    return res.status(400).json({ error: 'User not found'})
-  }
-  // entry already exists?
-  const existing = await Reading.findOne({
-    where: {
-        blog_id: req.body.blogId,
-        user_id: req.body.userId
-    }
-  })
-  if(existing) {
-    return res.status(400).json({ error: 'Blog already in the list'})
-  }
+    // Clean up the response format
+    const cleanReadings = readings.map(reading => ({
+      id: reading.id,
+      blog_id: reading.blog_id,
+      user_id: reading.user_id,
+      read: reading.read,
+      blog: reading.blog,
+      user: reading.user
+    }))
 
-  //creating the list
-  const reading = await Reading.create({
-    blog_id: req.body.blogId,
-    user_id: req.body.userId,
-    read: false
-  })
-
-  res.json(reading)
-    
-} catch(error) {
-    return res.status(400).json({ error })
-  }
+    res.json(cleanReadings)
 })
 
+router.put('/:id', async(req, res) => {
+ const readingList = await Reading.findByPk(req.params.id)
+
+ if (!readingList) {
+  return res.status(404).json({ error: 'Reading list entry not found' })
+}
+ readingList.read = req.body.read ?? readingList.read
+await readingList.save()
+res.json(readingList)
+})
+ 
 module.exports = router
