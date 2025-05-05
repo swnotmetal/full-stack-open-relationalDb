@@ -1,8 +1,8 @@
 const router = require('express').Router()
 const {Blog, User} = require('../models')
 const { Op } = require('sequelize')
-const { tokenAuthen } = require('../util/middleware')
-const { sequelize } = require('../util/db')
+const { tokenAuthen, sessionCheck  } = require('../util/middleware')
+
 
 router.get('/', async(req, res) => {
     let where = {}
@@ -29,13 +29,13 @@ router.get('/', async(req, res) => {
     res.json(blogs)
 })
 
-router.post('/', tokenAuthen, async (req, res) => {
+router.post('/', [tokenAuthen, sessionCheck], async (req, res) => {
     const user = req.user; // Logged-in user
     const blog = await Blog.create({ ...req.body, userId: user.id });
     res.json(blog);
 });
 
-router.delete('/:id', tokenAuthen, async (req, res) => {
+router.delete('/:id', [tokenAuthen, sessionCheck], async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id; // Current logged-in user
     console.log(`Logged-in user: ${req.user.username}, ID: ${userId}`);
@@ -58,7 +58,7 @@ router.delete('/:id', tokenAuthen, async (req, res) => {
     res.status(200).json({ message: `Blog with ID ${id} deleted` });
 });
 
-router.put('/:id', async(req, res) => {
+router.put('/:id',[tokenAuthen, sessionCheck], async(req, res) => {
     const { id } = req.params
     const { likes } = req.body
 

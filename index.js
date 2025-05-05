@@ -5,6 +5,30 @@ const { PORT } = require('./util/config')
 const { connectToDatabase } = require('./util/db')
 require('express-async-errors')
 
+
+
+const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  connectionString: process.env.DB_URL
+})
+
+app.use(session({
+  store: new PgSession({
+    pool,
+    tableName: 'session' // Session table name
+  }),
+  secret: process.env.SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 60 * 1000, // 1 min long session
+    secure: false
+  }
+}))
+
 const blogRouter = require('./controllers/blogs')
 const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
@@ -59,6 +83,8 @@ app.use((err, req, res, next) => {
     details: err.message || 'Unknown error'
   })
 })
+
+
 
 app.use((req, res) => {
   res.status(404).send({ error: 'Unknown endpoint' })
